@@ -1,4 +1,4 @@
-# agentCoder - Système d'Entraînement Multi-Agents pour LLM
+# Graden IA - Intelligence Artificielle pour Développeurs
 
 Un système complet pour entraîner un modèle LLM libre (Llama, Mistral, etc.) spécialisé dans la génération de code, utilisant un système multi-agents qui scrape automatiquement internet.
 

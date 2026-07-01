@@ -40,6 +40,7 @@ Thumbs.db
 base_models/
 trained_models/
 model_stats/
+models/
 
 # Environment
 .env

@@ -1,10 +1,10 @@
 """
-agentCoder - Application GUI
-Interface moderne inspirée d'opencode
+Graden IA - Application GUI Professionnelle
+Interface moderne et élégante pour le développement logiciel
 """
 
 import tkinter as tk
-from tkinter import ttk, scrolledtext, filedialog, messagebox
+from tkinter import ttk, scrolledtext, filedialog, messagebox, font as tkfont
 import os
 import sys
 import subprocess
@@ -12,422 +12,601 @@ import threading
 from pathlib import Path
 from datetime import datetime
 
-# Configuration
-APP_TITLE = "agentCoder"
-APP_VERSION = "2.0"
-BG_COLOR = "#1e1e2e"
-BG_SECONDARY = "#282840"
-BG_TERTIARY = "#313145"
-TEXT_COLOR = "#cdd6f4"
-ACCENT_COLOR = "#89b4fa"
-GREEN = "#a6e3a1"
-RED = "#f38ba8"
-YELLOW = "#f9e2af"
-BLUE = "#89dceb"
-DIM = "#6c7086"
-BORDER_COLOR = "#45475a"
+# ═══════════════════════════════════════════════════════════════
+# CONFIGURATION
+# ═══════════════════════════════════════════════════════════════
+
+APP_NAME = "Graden IA"
+APP_VERSION = "2.0.0"
+APP_SUBTITLE = "Intelligence Artificielle pour Développeurs"
+
+# Palette de couleurs professionnelle
+COLORS = {
+    "bg": "#0f0f1a",
+    "bg_secondary": "#161625",
+    "bg_tertiary": "#1e1e32",
+    "bg_card": "#22223a",
+    "bg_hover": "#2a2a45",
+    "border": "#2d2d4a",
+    "border_light": "#3d3d5c",
+    "text": "#e4e4f0",
+    "text_secondary": "#a0a0c0",
+    "text_dim": "#6a6a8a",
+    "accent": "#6c5ce7",
+    "accent_light": "#a29bfe",
+    "accent_dark": "#5a4bd1",
+    "green": "#00d2a0",
+    "green_dark": "#00b388",
+    "red": "#ff6b6b",
+    "yellow": "#feca57",
+    "blue": "#54a0ff",
+    "cyan": "#00d2d3",
+    "orange": "#ff9f43",
+    "pink": "#ff6b9d",
+}
+
+FONTS = {
+    "title": ("Segoe UI", 24, "bold"),
+    "subtitle": ("Segoe UI", 11),
+    "heading": ("Segoe UI", 14, "bold"),
+    "body": ("Segoe UI", 11),
+    "small": ("Segoe UI", 9),
+    "mono": ("Cascadia Code", 11),
+    "mono_small": ("Cascadia Code", 9),
+    "logo": ("Segoe UI", 28, "bold"),
+}
 
 
-class AgentCoderApp:
+class GradenIA:
+    """Application principale Graden IA."""
+    
     def __init__(self, root):
         self.root = root
-        self.root.title(APP_TITLE)
-        self.root.geometry("1200x800")
-        self.root.configure(bg=BG_COLOR)
-        self.root.minsize(900, 600)
+        self.root.title(APP_NAME)
+        self.root.geometry("1400x900")
+        self.root.configure(bg=COLORS["bg"])
+        self.root.minsize(1000, 700)
         
-        # Try to set icon
+        # Icon
+        self.set_icon()
+        
+        # Variables
+        self.current_dir = os.path.dirname(os.path.abspath(__file__))
+        self.editor_file = None
+        self.process = None
+        
+        # Build UI
+        self.setup_styles()
+        self.build_ui()
+        self.show_home()
+        
+        # Bindings
+        self.setup_bindings()
+    
+    def set_icon(self):
+        """Définit l'icône de l'application."""
         try:
             icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "IAtrainer.ico")
             if os.path.exists(icon_path):
                 self.root.iconbitmap(icon_path)
         except:
             pass
-        
-        self.current_dir = os.path.dirname(os.path.abspath(__file__))
-        self.history = []
-        self.history_index = -1
-        
-        self.setup_ui()
-        self.showWelcome()
     
-    def setup_ui(self):
-        """Configure l'interface utilisateur."""
+    def setup_styles(self):
+        """Configure les styles ttk."""
+        style = ttk.Style()
+        style.theme_use("clam")
         
+        style.configure("TFrame", background=COLORS["bg"])
+        style.configure("TLabel", background=COLORS["bg"], foreground=COLORS["text"])
+        style.configure("TButton", background=COLORS["accent"], foreground="white")
+        style.configure("Treeview", background=COLORS["bg_tertiary"], foreground=COLORS["text"])
+    
+    def build_ui(self):
+        """Construit l'interface principale."""
         # Main container
-        self.main_frame = tk.Frame(self.root, bg=BG_COLOR)
-        self.main_frame.pack(fill=tk.BOTH, expand=True)
+        self.main_container = tk.Frame(self.root, bg=COLORS["bg"])
+        self.main_container.pack(fill=tk.BOTH, expand=True)
         
         # Header
-        self.create_header()
+        self.build_header()
         
-        # Content area
-        self.content_frame = tk.Frame(self.main_frame, bg=BG_COLOR)
-        self.content_frame.pack(fill=tk.BOTH, expand=True, padx=0, pady=0)
+        # Content
+        self.content = tk.Frame(self.main_container, bg=COLORS["bg"])
+        self.content.pack(fill=tk.BOTH, expand=True)
         
         # Sidebar
-        self.create_sidebar()
+        self.build_sidebar()
         
         # Main area
-        self.create_main_area()
+        self.main_area = tk.Frame(self.content, bg=COLORS["bg"])
+        self.main_area.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         
         # Status bar
-        self.create_status_bar()
+        self.build_statusbar()
     
-    def create_header(self):
-        """Crée l'en-tête de l'application."""
-        header = tk.Frame(self.main_frame, bg=BG_SECONDARY, height=50)
+    def build_header(self):
+        """Construit l'en-tête professionnel."""
+        header = tk.Frame(self.main_container, bg=COLORS["bg_secondary"], height=60)
         header.pack(fill=tk.X)
         header.pack_propagate(False)
         
-        # Logo/Title
-        title_frame = tk.Frame(header, bg=BG_SECONDARY)
-        title_frame.pack(side=tk.LEFT, padx=15, fill=tk.Y)
+        # Left: Logo
+        left = tk.Frame(header, bg=COLORS["bg_secondary"])
+        left.pack(side=tk.LEFT, padx=20, fill=tk.Y)
         
-        tk.Label(title_frame, text="⬡", font=("Segoe UI", 18), 
-                bg=BG_SECONDARY, fg=ACCENT_COLOR).pack(side=tk.LEFT, padx=(0, 8))
-        tk.Label(title_frame, text=APP_TITLE, font=("Segoe UI", 14, "bold"),
-                bg=BG_SECONDARY, fg=TEXT_COLOR).pack(side=tk.LEFT)
-        tk.Label(title_frame, text=f"v{APP_VERSION}", font=("Segoe UI", 9),
-                bg=BG_SECONDARY, fg=DIM).pack(side=tk.LEFT, padx=(8, 0))
+        # Logo hexagon
+        logo_frame = tk.Frame(left, bg=COLORS["accent"], width=36, height=36)
+        logo_frame.pack(side=tk.LEFT, pady=12)
+        logo_frame.pack_propagate(False)
+        tk.Label(logo_frame, text="G", font=("Segoe UI", 16, "bold"),
+                bg=COLORS["accent"], fg="white").pack(expand=True)
         
-        # Right side buttons
-        btn_frame = tk.Frame(header, bg=BG_SECONDARY)
-        btn_frame.pack(side=tk.RIGHT, padx=10)
+        # Title
+        title_frame = tk.Frame(left, bg=COLORS["bg_secondary"])
+        title_frame.pack(side=tk.LEFT, padx=(12, 0), pady=12)
         
-        self.create_header_btn(btn_frame, "📁", self.open_folder)
-        self.create_header_btn(btn_frame, "⚙", self.show_settings)
-        self.create_header_btn(btn_frame, "✕", self.root.quit)
+        tk.Label(title_frame, text=APP_NAME, font=FONTS["heading"],
+                bg=COLORS["bg_secondary"], fg=COLORS["text"]).pack(anchor="w")
+        tk.Label(title_frame, text=APP_VERSION, font=FONTS["small"],
+                bg=COLORS["bg_secondary"], fg=COLORS["text_dim"]).pack(anchor="w")
+        
+        # Center: Search
+        center = tk.Frame(header, bg=COLORS["bg_secondary"])
+        center.pack(side=tk.LEFT, expand=True, padx=40)
+        
+        self.search_var = tk.StringVar()
+        search = tk.Entry(center, textvariable=self.search_var, font=FONTS["body"],
+                         bg=COLORS["bg_tertiary"], fg=COLORS["text"],
+                         insertbackground=COLORS["text"], relief=tk.FLAT,
+                         bd=0)
+        search.pack(ipady=8, padx=100, fill=tk.X)
+        search.insert(0, "  Rechercher un fichier, une commande...")
+        search.bind("<FocusIn>", lambda e: search.delete(0, tk.END) if "Rechercher" in search.get() else None)
+        search.bind("<FocusOut>", lambda e: search.insert(0, "  Rechercher un fichier, une commande...") if not search.get() else None)
+        
+        # Right: Window controls
+        right = tk.Frame(header, bg=COLORS["bg_secondary"])
+        right.pack(side=tk.RIGHT, padx=10, fill=tk.Y)
+        
+        self.build_window_btn(right, "—", self.minimize, COLORS["text_dim"])
+        self.build_window_btn(right, "□", self.maximize, COLORS["text_dim"])
+        self.build_window_btn(right, "×", self.root.quit, COLORS["red"])
     
-    def create_header_btn(self, parent, text, command):
+    def build_window_btn(self, parent, text, command, color):
+        """Bouton de controle window."""
         btn = tk.Label(parent, text=text, font=("Segoe UI", 12),
-                      bg=BG_SECONDARY, fg=TEXT_COLOR, cursor="hand2", padx=10)
-        btn.pack(side=tk.LEFT, padx=2)
-        btn.bind("<Enter>", lambda e: btn.configure(fg=ACCENT_COLOR))
-        btn.bind("<Leave>", lambda e: btn.configure(fg=TEXT_COLOR))
+                      bg=COLORS["bg_secondary"], fg=color, cursor="hand2",
+                      padx=12, pady=4)
+        btn.pack(side=tk.LEFT, padx=1)
         btn.bind("<Button-1>", lambda e: command())
+        btn.bind("<Enter>", lambda e: btn.configure(bg=COLORS["bg_hover"]))
+        btn.bind("<Leave>", lambda e: btn.configure(bg=COLORS["bg_secondary"]))
     
-    def create_sidebar(self):
-        """Crée la barre latérale."""
-        self.sidebar = tk.Frame(self.content_frame, bg=BG_SECONDARY, width=220)
+    def build_sidebar(self):
+        """Construit la barre latérale."""
+        self.sidebar = tk.Frame(self.content, bg=COLORS["bg_secondary"], width=240)
         self.sidebar.pack(side=tk.LEFT, fill=tk.Y)
         self.sidebar.pack_propagate(False)
         
-        # Search box
-        search_frame = tk.Frame(self.sidebar, bg=BG_SECONDARY)
-        search_frame.pack(fill=tk.X, padx=10, pady=10)
+        # Navigation label
+        tk.Label(self.sidebar, text="NAVIGATION", font=FONTS["small"],
+                bg=COLORS["bg_secondary"], fg=COLORS["text_dim"],
+                anchor="w").pack(fill=tk.X, padx=20, pady=(20, 10))
         
-        self.search_var = tk.StringVar()
-        search_entry = tk.Entry(search_frame, textvariable=self.search_var,
-                               bg=BG_TERTIARY, fg=TEXT_COLOR, insertbackground=TEXT_COLOR,
-                               font=("Segoe UI", 10), relief=tk.FLAT)
-        search_entry.pack(fill=tk.X, ipady=6)
-        search_entry.insert(0, "🔍 Rechercher...")
-        search_entry.bind("<FocusIn>", lambda e: search_entry.delete(0, tk.END) if search_entry.get() == "🔍 Rechercher..." else None)
-        search_entry.bind("<FocusOut>", lambda e: search_entry.insert(0, "🔍 Rechercher...") if not search_entry.get() else None)
-        
-        # Navigation
-        nav_frame = tk.Frame(self.sidebar, bg=BG_SECONDARY)
-        nav_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        
+        # Nav items
         nav_items = [
-            ("🏠", "Accueil", self.showWelcome),
-            ("🤖", "Modèles", self.showModels),
-            ("📊", "Analyse", self.showAnalysis),
-            ("🎯", "Entraînement", self.showTraining),
-            ("📁", "Fichiers", self.showFiles),
-            ("📋", "Git", self.showGit),
-            ("💻", "Terminal", self.showTerminal),
+            ("🏠", "Accueil", self.show_home),
+            ("🤖", "Modèles IA", self.show_models),
+            ("📊", "Analyse Code", self.show_analysis),
+            ("🎯", "Entraînement", self.show_training),
+            ("📁", "Explorateur", self.show_files),
+            ("📝", "Éditeur", self.show_editor),
+            ("⚡", "Terminal", self.show_terminal),
+            ("📋", "Git", self.show_git),
             ("⚙", "Paramètres", self.show_settings),
         ]
         
         for icon, text, command in nav_items:
-            item = tk.Frame(nav_frame, bg=BG_SECONDARY, cursor="hand2")
-            item.pack(fill=tk.X, pady=1)
-            
-            lbl = tk.Label(item, text=f" {icon}  {text}", font=("Segoe UI", 11),
-                          bg=BG_SECONDARY, fg=TEXT_COLOR, anchor="w", padx=10, pady=8)
-            lbl.pack(fill=tk.X)
-            
-            item.bind("<Enter>", lambda e, i=item, l=lbl: (i.configure(bg=BG_TERTIARY), l.configure(bg=BG_TERTIARY)))
-            item.bind("<Leave>", lambda e, i=item, l=lbl: (i.configure(bg=BG_SECONDARY), l.configure(bg=BG_SECONDARY)))
-            item.bind("<Button-1>", lambda e, cmd=command: cmd())
-            lbl.bind("<Button-1>", lambda e, cmd=command: cmd())
-    
-    def create_main_area(self):
-        """Crée la zone principale."""
-        self.main_area = tk.Frame(self.content_frame, bg=BG_COLOR)
-        self.main_area.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-    
-    def create_status_bar(self):
-        """Crée la barre de statut."""
-        self.status_bar = tk.Frame(self.main_frame, bg=BG_SECONDARY, height=28)
-        self.status_bar.pack(fill=tk.X)
-        self.status_bar.pack_propagate(False)
+            self.create_nav_item(icon, text, command)
         
-        self.status_label = tk.Label(self.status_bar, text=" ✓ Prêt", 
-                                    font=("Segoe UI", 9), bg=BG_SECONDARY, fg=GREEN)
-        self.status_label.pack(side=tk.LEFT, padx=10)
+        # Spacer
+        tk.Frame(self.sidebar, bg=COLORS["bg_secondary"]).pack(fill=tk.BOTH, expand=True)
         
-        self.dir_label = tk.Label(self.status_bar, text=f"📁 {self.current_dir}",
-                                 font=("Segoe UI", 9), bg=BG_SECONDARY, fg=DIM)
-        self.dir_label.pack(side=tk.RIGHT, padx=10)
+        # Bottom info
+        bottom = tk.Frame(self.sidebar, bg=COLORS["bg_secondary"])
+        bottom.pack(fill=tk.X, padx=15, pady=15)
+        
+        tk.Label(bottom, text="Graden IA v2.0", font=FONTS["small"],
+                bg=COLORS["bg_secondary"], fg=COLORS["text_dim"]).pack(anchor="w")
+        tk.Label(bottom, text="© 2026 Tous droits réservés", font=("Segoe UI", 8),
+                bg=COLORS["bg_secondary"], fg=COLORS["text_dim"]).pack(anchor="w")
     
-    def clear_main_area(self):
+    def create_nav_item(self, icon, text, command):
+        """Crée un élément de navigation."""
+        frame = tk.Frame(self.sidebar, bg=COLORS["bg_secondary"], cursor="hand2", height=42)
+        frame.pack(fill=tk.X, padx=8, pady=2)
+        frame.pack_propagate(False)
+        
+        lbl = tk.Label(frame, text=f"  {icon}    {text}", font=FONTS["body"],
+                       bg=COLORS["bg_secondary"], fg=COLORS["text_secondary"],
+                       anchor="w", padx=12)
+        lbl.pack(fill=tk.X, expand=True)
+        
+        def on_enter(e):
+            frame.configure(bg=COLORS["bg_hover"])
+            lbl.configure(bg=COLORS["bg_hover"], fg=COLORS["text"])
+        
+        def on_leave(e):
+            frame.configure(bg=COLORS["bg_secondary"])
+            lbl.configure(bg=COLORS["bg_secondary"], fg=COLORS["text_secondary"])
+        
+        def on_click(e):
+            command()
+        
+        for widget in [frame, lbl]:
+            widget.bind("<Enter>", on_enter)
+            widget.bind("<Leave>", on_leave)
+            widget.bind("<Button-1>", on_click)
+    
+    def build_statusbar(self):
+        """Construit la barre de statut."""
+        self.statusbar = tk.Frame(self.main_container, bg=COLORS["bg_secondary"], height=32)
+        self.statusbar.pack(fill=tk.X)
+        self.statusbar.pack_propagate(False)
+        
+        # Left
+        left = tk.Frame(self.statusbar, bg=COLORS["bg_secondary"])
+        left.pack(side=tk.LEFT, padx=15, fill=tk.Y)
+        
+        self.status_indicator = tk.Canvas(left, width=8, height=8,
+                                         bg=COLORS["bg_secondary"], highlightthickness=0)
+        self.status_indicator.pack(side=tk.LEFT, pady=10)
+        self.status_indicator.create_oval(0, 0, 8, 8, fill=COLORS["green"], outline="")
+        
+        self.status_text = tk.Label(left, text="  Prêt", font=FONTS["small"],
+                                   bg=COLORS["bg_secondary"], fg=COLORS["text_secondary"])
+        self.status_text.pack(side=tk.LEFT, padx=(5, 0))
+        
+        # Right
+        right = tk.Frame(self.statusbar, bg=COLORS["bg_secondary"])
+        right.pack(side=tk.RIGHT, padx=15, fill=tk.Y)
+        
+        self.dir_text = tk.Label(right, text=f"📁 {self.current_dir}",
+                                font=FONTS["small"], bg=COLORS["bg_secondary"],
+                                fg=COLORS["text_dim"])
+        self.dir_text.pack(side=tk.RIGHT)
+    
+    def clear_main(self):
         """Efface la zone principale."""
-        for widget in self.main_area.winfo_children():
-            widget.destroy()
+        for w in self.main_area.winfo_children():
+            w.destroy()
     
-    def showWelcome(self):
-        """Affiche l'écran d'accueil."""
-        self.clear_main_area()
+    def update_status(self, text, color=None):
+        """Met à jour la barre de statut."""
+        self.status_text.config(text=f"  {text}")
+        if color:
+            self.status_indicator.delete("all")
+            self.status_indicator.create_oval(0, 0, 8, 8, fill=color, outline="")
+    
+    # ═══════════════════════════════════════════════════════════════
+    # PAGES
+    # ═══════════════════════════════════════════════════════════════
+    
+    def show_home(self):
+        """Page d'accueil."""
+        self.clear_main()
+        self.update_status("Accueil", COLORS["green"])
         
-        # Welcome content
-        welcome_frame = tk.Frame(self.main_area, bg=BG_COLOR)
-        welcome_frame.pack(fill=tk.BOTH, expand=True, padx=40, pady=30)
+        # Scrollable frame
+        canvas = tk.Canvas(self.main_area, bg=COLORS["bg"], highlightthickness=0)
+        scrollbar = ttk.Scrollbar(self.main_area, orient="vertical", command=canvas.yview)
+        scrollable = tk.Frame(canvas, bg=COLORS["bg"])
+        
+        scrollable.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.create_window((0, 0), window=scrollable, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        # Welcome section
+        welcome = tk.Frame(scrollable, bg=COLORS["bg"])
+        welcome.pack(fill=tk.X, padx=50, pady=(40, 30))
         
         # Logo
-        tk.Label(welcome_frame, text="⬡", font=("Segoe UI", 60),
-                bg=BG_COLOR, fg=ACCENT_COLOR).pack(pady=(20, 10))
-        tk.Label(welcome_frame, text=APP_TITLE, font=("Segoe UI", 28, "bold"),
-                bg=BG_COLOR, fg=TEXT_COLOR).pack()
-        tk.Label(welcome_frame, text="Assistant CLI pour le développement logiciel",
-                font=("Segoe UI", 12), bg=BG_COLOR, fg=DIM).pack(pady=(5, 30))
+        logo = tk.Frame(welcome, bg=COLORS["accent"], width=60, height=60)
+        logo.pack(pady=(0, 15))
+        logo.pack_propagate(False)
+        tk.Label(logo, text="G", font=("Segoe UI", 28, "bold"),
+                bg=COLORS["accent"], fg="white").pack(expand=True)
+        
+        tk.Label(welcome, text=APP_NAME, font=FONTS["title"],
+                bg=COLORS["bg"], fg=COLORS["text"]).pack()
+        tk.Label(welcome, text=APP_SUBTITLE, font=FONTS["subtitle"],
+                bg=COLORS["bg"], fg=COLORS["text_secondary"]).pack(pady=(5, 0))
         
         # Quick actions
-        actions_frame = tk.Frame(welcome_frame, bg=BG_COLOR)
-        actions_frame.pack(fill=tk.X)
+        actions_frame = tk.Frame(scrollable, bg=COLORS["bg"])
+        actions_frame.pack(fill=tk.X, padx=50, pady=(10, 30))
         
-        tk.Label(actions_frame, text="Actions rapides", font=("Segoe UI", 14, "bold"),
-                bg=BG_COLOR, fg=TEXT_COLOR).pack(anchor="w", pady=(0, 15))
+        tk.Label(actions_frame, text=" ACTIONS RAPIDES", font=FONTS["heading"],
+                bg=COLORS["bg"], fg=COLORS["text"]).pack(anchor="w", pady=(0, 15))
         
         actions = [
-            ("📖", "Lire un fichier", "Lire et analyser un fichier code", self.action_read),
-            ("✏️", "Écrire du code", "Créer ou modifier un fichier", self.action_write),
-            ("🔎", "Rechercher", "Trouver du texte dans les fichiers", self.action_search),
-            ("📊", "Analyser", "Analyser la qualité du code", self.action_analyze),
-            ("▶️", "Exécuter", "Lancer un script Python", self.action_run),
-            ("🎯", "Entraîner", "Lancer l'entraînement du modèle", self.action_train),
+            ("📄", "Lire un Fichier", "Analyser le contenu d'un fichier code", self.action_read, COLORS["blue"]),
+            ("✏️", "Écrire du Code", "Créer ou modifier un fichier", self.action_write, COLORS["green"]),
+            ("🔎", "Rechercher", "Trouver du texte dans les fichiers", self.action_search, COLORS["cyan"]),
+            ("📊", "Analyser Code", "Évaluer la qualité et la complexité", self.action_analyze_code, COLORS["orange"]),
+            ("▶️", "Exécuter Script", "Lancer un fichier Python", self.action_run, COLORS["accent_light"]),
+            ("🎯", "Entraîner IA", "Lancer l'entraînement du modèle", self.action_train, COLORS["pink"]),
         ]
         
-        for icon, title, desc, command in actions:
-            card = tk.Frame(actions_frame, bg=BG_SECONDARY, cursor="hand2")
-            card.pack(fill=tk.X, pady=4)
-            
-            content = tk.Frame(card, bg=BG_SECONDARY)
-            content.pack(fill=tk.X, padx=15, pady=12)
-            
-            tk.Label(content, text=icon, font=("Segoe UI", 18),
-                    bg=BG_SECONDARY, fg=ACCENT_COLOR).pack(side=tk.LEFT, padx=(0, 15))
-            
-            text_frame = tk.Frame(content, bg=BG_SECONDARY)
-            text_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
-            
-            tk.Label(text_frame, text=title, font=("Segoe UI", 12, "bold"),
-                    bg=BG_SECONDARY, fg=TEXT_COLOR).pack(anchor="w")
-            tk.Label(text_frame, text=desc, font=("Segoe UI", 9),
-                    bg=BG_SECONDARY, fg=DIM).pack(anchor="w")
-            
-            card.bind("<Enter>", lambda e, c=card: c.configure(bg=BG_TERTIARY))
-            card.bind("<Leave>", lambda e, c=card: c.configure(bg=BG_SECONDARY))
-            card.bind("<Button-1>", lambda e, cmd=command: cmd())
-            for child in content.winfo_children():
-                child.bind("<Button-1>", lambda e, cmd=command: cmd())
-                for subchild in child.winfo_children():
-                    subchild.bind("<Button-1>", lambda e, cmd=command: cmd())
+        grid = tk.Frame(actions_frame, bg=COLORS["bg"])
+        grid.pack(fill=tk.X)
         
-        # Keyboard shortcuts
-        shortcuts_frame = tk.Frame(welcome_frame, bg=BG_COLOR)
-        shortcuts_frame.pack(fill=tk.X, pady=(30, 0))
+        for i, (icon, title, desc, cmd, color) in enumerate(actions):
+            row, col = divmod(i, 3)
+            card = self.create_action_card(grid, icon, title, desc, cmd, color)
+            card.grid(row=row, column=col, padx=5, pady=5, sticky="nsew")
         
-        tk.Label(shortcuts_frame, text="Raccourcis clavier", font=("Segoe UI", 14, "bold"),
-                bg=BG_COLOR, fg=TEXT_COLOR).pack(anchor="w", pady=(0, 10))
+        grid.columnconfigure(0, weight=1)
+        grid.columnconfigure(1, weight=1)
+        grid.columnconfigure(2, weight=1)
         
-        shortcuts = [
-            ("Ctrl+O", "Ouvrir un fichier"),
-            ("Ctrl+S", "Sauvegarder"),
-            ("Ctrl+F", "Rechercher"),
-            ("F5", "Exécuter"),
-            ("Ctrl+Shift+T", "Entraîner"),
-        ]
+        # Recent files
+        recent_frame = tk.Frame(scrollable, bg=COLORS["bg"])
+        recent_frame.pack(fill=tk.X, padx=50, pady=(0, 30))
         
-        for key, desc in shortcuts:
-            sc = tk.Frame(shortcuts_frame, bg=BG_COLOR)
-            sc.pack(fill=tk.X, pady=2)
+        tk.Label(recent_frame, text=" FICHIERS DU PROJET", font=FONTS["heading"],
+                bg=COLORS["bg"], fg=COLORS["text"]).pack(anchor="w", pady=(0, 15))
+        
+        files_frame = tk.Frame(recent_frame, bg=COLORS["bg_card"])
+        files_frame.pack(fill=tk.X)
+        
+        py_files = [f for f in os.listdir(self.current_dir) if f.endswith('.py')]
+        for f in py_files[:8]:
+            item = tk.Frame(files_frame, bg=COLORS["bg_card"], cursor="hand2")
+            item.pack(fill=tk.X, padx=1, pady=1)
             
-            tk.Label(sc, text=key, font=("Consolas", 10), bg=BG_TERTIARY, 
-                    fg=ACCENT_COLOR, padx=8, pady=2).pack(side=tk.LEFT)
-            tk.Label(sc, text=f"  {desc}", font=("Segoe UI", 10),
-                    bg=BG_COLOR, fg=DIM).pack(side=tk.LEFT)
-        
-        # Bind keyboard shortcuts
-        self.root.bind("<Control-o>", lambda e: self.action_read())
-        self.root.bind("<Control-s>", lambda e: self.action_write())
-        self.root.bind("<Control-f>", lambda e: self.action_search())
-        self.root.bind("<F5>", lambda e: self.action_run())
+            tk.Label(item, text=f"  🐍  {f}", font=FONTS["mono_small"],
+                    bg=COLORS["bg_card"], fg=COLORS["text_secondary"],
+                    anchor="w").pack(fill=tk.X, padx=10, pady=6)
+            
+            item.bind("<Enter>", lambda e, i=item: i.configure(bg=COLORS["bg_hover"]))
+            item.bind("<Leave>", lambda e, i=item: i.configure(bg=COLORS["bg_card"]))
+            item.bind("<Button-1>", lambda e, f=f: self.open_file(os.path.join(self.current_dir, f)))
     
-    def showModels(self):
-        """Affiche la gestion des modèles."""
-        self.clear_main_area()
+    def create_action_card(self, parent, icon, title, desc, command, color):
+        """Crée une carte d'action."""
+        card = tk.Frame(parent, bg=COLORS["bg_card"], cursor="hand2", height=100)
+        card.pack_propagate(False)
         
-        frame = tk.Frame(self.main_area, bg=BG_COLOR)
-        frame.pack(fill=tk.BOTH, expand=True, padx=30, pady=20)
+        content = tk.Frame(card, bg=COLORS["bg_card"])
+        content.pack(fill=tk.BOTH, expand=True, padx=15, pady=15)
         
-        tk.Label(frame, text="🤖 Gestion des Modèles", font=("Segoe UI", 18, "bold"),
-                bg=BG_COLOR, fg=TEXT_COLOR).pack(anchor="w", pady=(0, 20))
+        # Icon with color
+        icon_frame = tk.Frame(content, bg=color, width=36, height=36)
+        icon_frame.pack(anchor="w")
+        icon_frame.pack_propagate(False)
+        tk.Label(icon_frame, text=icon, font=("Segoe UI", 16),
+                bg=color, fg="white").pack(expand=True)
         
-        # Models list
-        models_frame = tk.Frame(frame, bg=BG_SECONDARY)
-        models_frame.pack(fill=tk.BOTH, expand=True)
+        tk.Label(content, text=title, font=FONTS["heading"],
+                bg=COLORS["bg_card"], fg=COLORS["text"]).pack(anchor="w", pady=(10, 2))
+        tk.Label(content, text=desc, font=FONTS["small"],
+                bg=COLORS["bg_card"], fg=COLORS["text_dim"]).pack(anchor="w")
         
-        tk.Label(models_frame, text="Modèles disponibles", font=("Segoe UI", 12, "bold"),
-                bg=BG_SECONDARY, fg=TEXT_COLOR).pack(anchor="w", padx=15, pady=(15, 10))
+        def on_enter(e):
+            card.configure(bg=COLORS["bg_hover"])
+            for c in card.winfo_children():
+                c.configure(bg=COLORS["bg_hover"])
+                for cc in c.winfo_children():
+                    try:
+                        cc.configure(bg=COLORS["bg_hover"])
+                    except:
+                        pass
+        
+        def on_leave(e):
+            card.configure(bg=COLORS["bg_card"])
+            for c in card.winfo_children():
+                c.configure(bg=COLORS["bg_card"])
+                for cc in c.winfo_children():
+                    try:
+                        cc.configure(bg=COLORS["bg_card"])
+                    except:
+                        pass
+        
+        card.bind("<Enter>", on_enter)
+        card.bind("<Leave>", on_leave)
+        card.bind("<Button-1>", lambda e: command())
+        
+        return card
+    
+    def show_models(self):
+        """Page des modèles IA."""
+        self.clear_main()
+        self.update_status("Modèles IA", COLORS["blue"])
+        
+        frame = tk.Frame(self.main_area, bg=COLORS["bg"])
+        frame.pack(fill=tk.BOTH, expand=True, padx=40, pady=30)
+        
+        # Header
+        header = tk.Frame(frame, bg=COLORS["bg"])
+        header.pack(fill=tk.X, pady=(0, 25))
+        
+        tk.Label(header, text="🤖 Modèles IA", font=FONTS["title"],
+                bg=COLORS["bg"], fg=COLORS["text"]).pack(anchor="w")
+        tk.Label(header, text="Gérez vos modèles de langage", font=FONTS["subtitle"],
+                bg=COLORS["bg"], fg=COLORS["text_secondary"]).pack(anchor="w")
+        
+        # Models grid
+        grid = tk.Frame(frame, bg=COLORS["bg"])
+        grid.pack(fill=tk.BOTH, expand=True)
         
         models_dir = os.path.join(self.current_dir, "models")
         if os.path.exists(models_dir):
-            for root_dir, dirs, files in os.walk(models_dir):
-                level = root_dir.replace(models_dir, '').count(os.sep)
-                if level > 2:
-                    continue
-                indent = '  ' * level
-                folder_name = os.path.basename(root_dir)
+            model_folders = [d for d in os.listdir(models_dir) if os.path.isdir(os.path.join(models_dir, d))]
+            
+            for i, model in enumerate(model_folders):
+                row, col = divmod(i, 3)
                 
-                item = tk.Frame(models_frame, bg=BG_SECONDARY)
-                item.pack(fill=tk.X, padx=15, pady=2)
+                card = tk.Frame(grid, bg=COLORS["bg_card"])
+                card.grid(row=row, column=col, padx=8, pady=8, sticky="nsew")
                 
-                tk.Label(item, text=f"{indent}📁 {folder_name}", font=("Consolas", 10),
-                        bg=BG_SECONDARY, fg=BLUE, anchor="w").pack(side=tk.LEFT, padx=10, pady=4)
+                # Model icon
+                icon_frame = tk.Frame(card, bg=COLORS["accent"], width=50, height=50)
+                icon_frame.pack(padx=20, pady=(20, 10))
+                icon_frame.pack_propagate(False)
+                tk.Label(icon_frame, text="🧠", font=("Segoe UI", 22),
+                        bg=COLORS["accent"], fg="white").pack(expand=True)
+                
+                tk.Label(card, text=model, font=FONTS["heading"],
+                        bg=COLORS["bg_card"], fg=COLORS["text"]).pack(pady=(0, 5))
+                
+                # Count files
+                model_path = os.path.join(models_dir, model)
+                file_count = sum(len(files) for _, _, files in os.walk(model_path))
+                tk.Label(card, text=f"{file_count} fichiers", font=FONTS["small"],
+                        bg=COLORS["bg_card"], fg=COLORS["text_dim"]).pack()
+        
         else:
-            tk.Label(models_frame, text="Aucun modèle trouvé", font=("Segoe UI", 10),
-                    bg=BG_SECONDARY, fg=DIM).pack(pady=20)
+            tk.Label(grid, text="Aucun modèle trouvé", font=FONTS["body"],
+                    bg=COLORS["bg"], fg=COLORS["text_dim"]).pack(pady=50)
         
-        # Action buttons
-        btn_frame = tk.Frame(frame, bg=BG_COLOR)
-        btn_frame.pack(fill=tk.X, pady=(15, 0))
-        
-        self.create_button(btn_frame, "🔄 Rafraîchir", self.showModels)
-        self.create_button(btn_list_frame, "📥 Télécharger", self.action_download_model)
+        grid.columnconfigure(0, weight=1)
+        grid.columnconfigure(1, weight=1)
+        grid.columnconfigure(2, weight=1)
     
-    def showAnalysis(self):
-        """Affiche l'analyse de code."""
-        self.clear_main_area()
+    def show_analysis(self):
+        """Page d'analyse de code."""
+        self.clear_main()
+        self.update_status("Analyse Code", COLORS["orange"])
         
-        frame = tk.Frame(self.main_area, bg=BG_COLOR)
-        frame.pack(fill=tk.BOTH, expand=True, padx=30, pady=20)
+        frame = tk.Frame(self.main_area, bg=COLORS["bg"])
+        frame.pack(fill=tk.BOTH, expand=True, padx=40, pady=30)
         
-        tk.Label(frame, text="📊 Analyse de Code", font=("Segoe UI", 18, "bold"),
-                bg=BG_COLOR, fg=TEXT_COLOR).pack(anchor="w", pady=(0, 20))
+        tk.Label(frame, text="📊 Analyse de Code", font=FONTS["title"],
+                bg=COLORS["bg"], fg=COLORS["text"]).pack(anchor="w", pady=(0, 25))
         
-        # Input area
-        input_frame = tk.Frame(frame, bg=BG_SECONDARY)
-        input_frame.pack(fill=tk.BOTH, expand=True)
+        # Input card
+        input_card = tk.Frame(frame, bg=COLORS["bg_card"])
+        input_card.pack(fill=tk.X, pady=(0, 20))
         
-        tk.Label(input_frame, text="Chemin du fichier à analyser:", font=("Segoe UI", 10),
-                bg=BG_SECONDARY, fg=TEXT_COLOR, anchor="w").pack(fill=tk.X, padx=15, pady=(15, 5))
+        tk.Label(input_card, text="  Sélectionner un fichier", font=FONTS["heading"],
+                bg=COLORS["bg_card"], fg=COLORS["text"]).pack(anchor="w", padx=15, pady=(15, 10))
         
-        path_frame = tk.Frame(input_frame, bg=BG_SECONDARY)
-        path_frame.pack(fill=tk.X, padx=15, pady=(0, 10))
+        path_frame = tk.Frame(input_card, bg=COLORS["bg_card"])
+        path_frame.pack(fill=tk.X, padx=15, pady=(0, 15))
         
-        self.analysis_path = tk.Entry(path_frame, bg=BG_TERTIARY, fg=TEXT_COLOR,
-                                     insertbackground=TEXT_COLOR, font=("Consolas", 10),
-                                     relief=tk.FLAT)
-        self.analysis_path.pack(side=tk.LEFT, fill=tk.X, expand=True, ipady=6)
+        self.analysis_path = tk.Entry(path_frame, bg=COLORS["bg_tertiary"], fg=COLORS["text"],
+                                     insertbackground=COLORS["text"], font=FONTS["mono"],
+                                     relief=tk.FLAT, bd=0)
+        self.analysis_path.pack(side=tk.LEFT, fill=tk.X, expand=True, ipady=10, padx=(0, 10))
         
-        self.create_button(path_frame, "📂", self.browse_file)
-        self.create_button(path_frame, "📊 Analyser", self.run_analysis)
+        self.create_btn(path_frame, "📂 Parcourir", self.browse_file, COLORS["bg_tertiary"])
+        self.create_btn(path_frame, "📊 Analyser", self.run_analysis, COLORS["accent"])
         
-        # Results area
-        self.analysis_result = scrolledtext.ScrolledText(input_frame, bg=BG_TERTIARY, 
-                                                        fg=TEXT_COLOR, font=("Consolas", 10),
-                                                        relief=tk.FLAT, wrap=tk.WORD)
+        # Results card
+        result_card = tk.Frame(frame, bg=COLORS["bg_card"])
+        result_card.pack(fill=tk.BOTH, expand=True)
+        
+        tk.Label(result_card, text="  Résultats", font=FONTS["heading"],
+                bg=COLORS["bg_card"], fg=COLORS["text"]).pack(anchor="w", padx=15, pady=(15, 10))
+        
+        self.analysis_result = scrolledtext.ScrolledText(result_card, bg=COLORS["bg_tertiary"],
+                                                        fg=COLORS["text"], font=FONTS["mono"],
+                                                        relief=tk.FLAT, wrap=tk.WORD,
+                                                        insertbackground=COLORS["text"])
         self.analysis_result.pack(fill=tk.BOTH, expand=True, padx=15, pady=(0, 15))
     
-    def showTraining(self):
-        """Affiche l'interface d'entraînement."""
-        self.clear_main_area()
+    def show_training(self):
+        """Page d'entraînement."""
+        self.clear_main()
+        self.update_status("Entraînement", COLORS["pink"])
         
-        frame = tk.Frame(self.main_area, bg=BG_COLOR)
-        frame.pack(fill=tk.BOTH, expand=True, padx=30, pady=20)
+        frame = tk.Frame(self.main_area, bg=COLORS["bg"])
+        frame.pack(fill=tk.BOTH, expand=True, padx=40, pady=30)
         
-        tk.Label(frame, text="🎯 Entraînement du Modèle", font=("Segoe UI", 18, "bold"),
-                bg=BG_COLOR, fg=TEXT_COLOR).pack(anchor="w", pady=(0, 20))
+        tk.Label(frame, text="🎯 Entraînement IA", font=FONTS["title"],
+                bg=COLORS["bg"], fg=COLORS["text"]).pack(anchor="w", pady=(0, 25))
         
-        # Training form
-        form_frame = tk.Frame(frame, bg=BG_SECONDARY)
-        form_frame.pack(fill=tk.X)
+        # Config card
+        config_card = tk.Frame(frame, bg=COLORS["bg_card"])
+        config_card.pack(fill=tk.X, pady=(0, 20))
+        
+        tk.Label(config_card, text="  Configuration", font=FONTS["heading"],
+                bg=COLORS["bg_card"], fg=COLORS["text"]).pack(anchor="w", padx=15, pady=(15, 10))
         
         # Topic
-        tk.Label(form_frame, text="Sujet d'entraînement:", font=("Segoe UI", 10),
-                bg=BG_SECONDARY, fg=TEXT_COLOR, anchor="w").pack(fill=tk.X, padx=15, pady=(15, 5))
-        self.topic_entry = tk.Entry(form_frame, bg=BG_TERTIARY, fg=TEXT_COLOR,
-                                   insertbackground=TEXT_COLOR, font=("Consolas", 10),
-                                   relief=tk.FLAT)
-        self.topic_entry.pack(fill=tk.X, padx=15, ipady=6)
+        tk.Label(config_card, text="Sujet d'entraînement:", font=FONTS["small"],
+                bg=COLORS["bg_card"], fg=COLORS["text_secondary"]).pack(anchor="w", padx=15)
+        self.topic_entry = tk.Entry(config_card, bg=COLORS["bg_tertiary"], fg=COLORS["text"],
+                                   insertbackground=COLORS["text"], font=FONTS["mono"],
+                                   relief=tk.FLAT, bd=0)
+        self.topic_entry.pack(fill=tk.X, padx=15, ipady=10, pady=(5, 15))
         self.topic_entry.insert(0, "Unity game development best practices")
         
-        # Pages and iterations
-        params_frame = tk.Frame(form_frame, bg=BG_SECONDARY)
-        params_frame.pack(fill=tk.X, padx=15, pady=(15, 0))
+        # Params row
+        params = tk.Frame(config_card, bg=COLORS["bg_card"])
+        params.pack(fill=tk.X, padx=15, pady=(0, 15))
         
-        tk.Label(params_frame, text="Pages:", font=("Segoe UI", 10),
-                bg=BG_SECONDARY, fg=TEXT_COLOR).pack(side=tk.LEFT)
-        self.pages_spin = tk.Spinbox(params_frame, from_=1, to=20, width=5,
-                                     bg=BG_TERTIARY, fg=TEXT_COLOR, font=("Consolas", 10))
+        tk.Label(params, text="Pages:", font=FONTS["small"],
+                bg=COLORS["bg_card"], fg=COLORS["text_secondary"]).pack(side=tk.LEFT)
+        self.pages_spin = tk.Spinbox(params, from_=1, to=20, width=5,
+                                     bg=COLORS["bg_tertiary"], fg=COLORS["text"],
+                                     font=FONTS["mono"], relief=tk.FLAT)
         self.pages_spin.pack(side=tk.LEFT, padx=(5, 20))
         self.pages_spin.delete(0, tk.END)
         self.pages_spin.insert(0, "3")
         
-        tk.Label(params_frame, text="Itérations:", font=("Segoe UI", 10),
-                bg=BG_SECONDARY, fg=TEXT_COLOR).pack(side=tk.LEFT)
-        self.iter_spin = tk.Spinbox(params_frame, from_=1, to=20, width=5,
-                                    bg=BG_TERTIARY, fg=TEXT_COLOR, font=("Consolas", 10))
+        tk.Label(params, text="Itérations:", font=FONTS["small"],
+                bg=COLORS["bg_card"], fg=COLORS["text_secondary"]).pack(side=tk.LEFT)
+        self.iter_spin = tk.Spinbox(params, from_=1, to=20, width=5,
+                                    bg=COLORS["bg_tertiary"], fg=COLORS["text"],
+                                    font=FONTS["mono"], relief=tk.FLAT)
         self.iter_spin.pack(side=tk.LEFT, padx=(5, 0))
         self.iter_spin.delete(0, tk.END)
         self.iter_spin.insert(0, "3")
         
-        # Code only checkbox
-        self.code_only_var = tk.BooleanVar()
-        tk.Checkbutton(form_frame, text="Code only (scraping de code uniquement)",
-                      variable=self.code_only_var, bg=BG_SECONDARY, fg=TEXT_COLOR,
-                      selectcolor=BG_TERTIARY, font=("Segoe UI", 10)).pack(fill=tk.X, padx=15, pady=(15, 0))
+        self.create_btn(config_card, "🎯 Lancer l'Entraînement", self.start_training, COLORS["accent"], large=True)
         
-        # Start button
-        btn_frame = tk.Frame(form_frame, bg=BG_SECONDARY)
-        btn_frame.pack(fill=tk.X, padx=15, pady=(20, 15))
+        # Log card
+        log_card = tk.Frame(frame, bg=COLORS["bg_card"])
+        log_card.pack(fill=tk.BOTH, expand=True)
         
-        self.create_button(btn_frame, "🎯 Lancer l'entraînement", self.start_training, large=True)
+        tk.Label(log_card, text="  Journal", font=FONTS["heading"],
+                bg=COLORS["bg_card"], fg=COLORS["text"]).pack(anchor="w", padx=15, pady=(15, 10))
         
-        # Log area
-        tk.Label(frame, text="Journal:", font=("Segoe UI", 12, "bold"),
-                bg=BG_COLOR, fg=TEXT_COLOR).pack(anchor="w", pady=(20, 10))
-        
-        self.training_log = scrolledtext.ScrolledText(frame, bg=BG_SECONDARY, fg=TEXT_COLOR,
-                                                     font=("Consolas", 10), relief=tk.FLAT,
-                                                     wrap=tk.WORD, height=12)
-        self.training_log.pack(fill=tk.BOTH, expand=True)
+        self.training_log = scrolledtext.ScrolledText(log_card, bg=COLORS["bg_tertiary"],
+                                                     fg=COLORS["text"], font=FONTS["mono"],
+                                                     relief=tk.FLAT, wrap=tk.WORD,
+                                                     insertbackground=COLORS["text"])
+        self.training_log.pack(fill=tk.BOTH, expand=True, padx=15, pady=(0, 15))
     
-    def showFiles(self):
-        """Affiche l'explorateur de fichiers."""
-        self.clear_main_area()
+    def show_files(self):
+        """Explorateur de fichiers."""
+        self.clear_main()
+        self.update_status("Explorateur", COLORS["cyan"])
         
-        frame = tk.Frame(self.main_area, bg=BG_COLOR)
-        frame.pack(fill=tk.BOTH, expand=True, padx=30, pady=20)
+        frame = tk.Frame(self.main_area, bg=COLORS["bg"])
+        frame.pack(fill=tk.BOTH, expand=True, padx=40, pady=30)
         
-        tk.Label(frame, text="📁 Explorateur de Fichiers", font=("Segoe UI", 18, "bold"),
-                bg=BG_COLOR, fg=TEXT_COLOR).pack(anchor="w", pady=(0, 20))
+        tk.Label(frame, text="📁 Explorateur", font=FONTS["title"],
+                bg=COLORS["bg"], fg=COLORS["text"]).pack(anchor="w", pady=(0, 25))
         
         # File tree
-        tree_frame = tk.Frame(frame, bg=BG_SECONDARY)
-        tree_frame.pack(fill=tk.BOTH, expand=True)
+        tree_card = tk.Frame(frame, bg=COLORS["bg_card"])
+        tree_card.pack(fill=tk.BOTH, expand=True)
         
-        self.file_tree = tk.Frame(tree_frame, bg=BG_SECONDARY)
+        self.file_tree = tk.Frame(tree_card, bg=COLORS["bg_card"])
         self.file_tree.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
-        self.load_file_tree(self.current_dir, self.file_tree)
+        self.load_tree(self.current_dir, self.file_tree)
     
-    def load_file_tree(self, path, parent, level=0):
-        """Charge l'arborescence des fichiers."""
-        if level > 3:
+    def load_tree(self, path, parent, level=0):
+        """Charge l'arborescence."""
+        if level > 4:
             return
         
         try:
@@ -436,139 +615,195 @@ class AgentCoderApp:
                 if item.startswith('.') or item == '__pycache__':
                     continue
                 
-                full_path = os.path.join(path, item)
-                is_dir = os.path.isdir(full_path)
+                full = os.path.join(path, item)
+                is_dir = os.path.isdir(full)
                 
-                item_frame = tk.Frame(parent, bg=BG_SECONDARY)
-                item_frame.pack(fill=tk.X, padx=level * 20, pady=1)
+                row = tk.Frame(parent, bg=COLORS["bg_card"])
+                row.pack(fill=tk.X, padx=level * 20, pady=1)
                 
                 icon = "📁" if is_dir else "📄"
-                color = BLUE if is_dir else TEXT_COLOR
+                color = COLORS["blue"] if is_dir else COLORS["text_secondary"]
                 
-                lbl = tk.Label(item_frame, text=f" {icon} {item}", font=("Consolas", 10),
-                              bg=BG_SECONDARY, fg=color, anchor="w", cursor="hand2")
-                lbl.pack(fill=tk.X, padx=10, pady=3)
+                lbl = tk.Label(row, text=f"  {icon}  {item}", font=FONTS["mono_small"],
+                              bg=COLORS["bg_card"], fg=color, anchor="w", cursor="hand2")
+                lbl.pack(fill=tk.X, padx=10, pady=4)
                 
                 if is_dir:
-                    lbl.bind("<Button-1>", lambda e, p=full_path: self.load_file_tree(p, parent))
+                    lbl.bind("<Button-1>", lambda e, p=full: self.load_tree(p, parent))
                 else:
-                    lbl.bind("<Button-1>", lambda e, p=full_path: self.open_file(p))
-        except PermissionError:
+                    lbl.bind("<Button-1>", lambda e, p=full: self.open_file(p))
+        except:
             pass
     
-    def showGit(self):
-        """Affiche les opérations Git."""
-        self.clear_main_area()
+    def show_editor(self):
+        """Éditeur de code."""
+        self.clear_main()
+        self.update_status("Éditeur", COLORS["green"])
         
-        frame = tk.Frame(self.main_area, bg=BG_COLOR)
-        frame.pack(fill=tk.BOTH, expand=True, padx=30, pady=20)
+        frame = tk.Frame(self.main_area, bg=COLORS["bg"])
+        frame.pack(fill=tk.BOTH, expand=True, padx=40, pady=30)
         
-        tk.Label(frame, text="📋 Git", font=("Segoe UI", 18, "bold"),
-                bg=BG_COLOR, fg=TEXT_COLOR).pack(anchor="w", pady=(0, 20))
+        tk.Label(frame, text="📝 Éditeur", font=FONTS["title"],
+                bg=COLORS["bg"], fg=COLORS["text"]).pack(anchor="w", pady=(0, 25))
         
-        # Git buttons
-        btn_frame = tk.Frame(frame, bg=BG_SECONDARY)
-        btn_frame.pack(fill=tk.X)
+        # Toolbar
+        toolbar = tk.Frame(frame, bg=COLORS["bg_card"])
+        toolbar.pack(fill=tk.X, pady=(0, 10))
         
-        git_actions = [
-            ("📋 Statut", "git status", self.current_dir),
-            ("📝 Diff", "git diff", self.current_dir),
-            ("📜 Log", "git log --oneline -10", self.current_dir),
-            ("➕ Ajouter tout", "git add .", self.current_dir),
-        ]
+        self.create_btn(toolbar, "📂 Ouvrir", self.action_read, COLORS["bg_tertiary"])
+        self.create_btn(toolbar, "💾 Sauvegarder", self.save_file, COLORS["green"])
         
-        for text, cmd, path in git_actions:
-            btn = tk.Button(btn_frame, text=text, font=("Segoe UI", 10),
-                          bg=BG_TERTIARY, fg=TEXT_COLOR, activebackground=BORDER_COLOR,
-                          activeforeground=TEXT_COLOR, relief=tk.FLAT, cursor="hand2",
-                          command=lambda c=cmd, p=path: self.run_git_command(c, p))
-            btn.pack(fill=tk.X, padx=10, pady=5)
+        self.file_label = tk.Label(toolbar, text="Aucun fichier", font=FONTS["small"],
+                                   bg=COLORS["bg_card"], fg=COLORS["text_dim"])
+        self.file_label.pack(side=tk.RIGHT, padx=10)
         
-        # Commit section
-        commit_frame = tk.Frame(frame, bg=BG_SECONDARY)
-        commit_frame.pack(fill=tk.X, pady=(10, 0))
+        # Editor
+        editor_card = tk.Frame(frame, bg=COLORS["bg_card"])
+        editor_card.pack(fill=tk.BOTH, expand=True)
         
-        tk.Label(commit_frame, text="Message de commit:", font=("Segoe UI", 10),
-                bg=BG_SECONDARY, fg=TEXT_COLOR, anchor="w").pack(fill=tk.X, padx=15, pady=(15, 5))
-        
-        self.commit_msg = tk.Entry(commit_frame, bg=BG_TERTIARY, fg=TEXT_COLOR,
-                                  insertbackground=TEXT_COLOR, font=("Consolas", 10),
-                                  relief=tk.FLAT)
-        self.commit_msg.pack(fill=tk.X, padx=15, ipady=6)
-        
-        self.create_button(commit_frame, "💾 Commit", self.git_commit)
-        
-        # Git output
-        tk.Label(frame, text="Sortie:", font=("Segoe UI", 12, "bold"),
-                bg=BG_COLOR, fg=TEXT_COLOR).pack(anchor="w", pady=(20, 10))
-        
-        self.git_output = scrolledtext.ScrolledText(frame, bg=BG_SECONDARY, fg=TEXT_COLOR,
-                                                   font=("Consolas", 10), relief=tk.FLAT,
-                                                   wrap=tk.WORD, height=10)
-        self.git_output.pack(fill=tk.BOTH, expand=True)
+        self.editor = scrolledtext.ScrolledText(editor_card, bg=COLORS["bg_tertiary"],
+                                               fg=COLORS["text"], font=FONTS["mono"],
+                                               relief=tk.FLAT, wrap=tk.WORD,
+                                               insertbackground=COLORS["text"],
+                                               undo=True)
+        self.editor.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
     
-    def showTerminal(self):
-        """Affiche un terminal intégré."""
-        self.clear_main_area()
+    def show_terminal(self):
+        """Terminal intégré."""
+        self.clear_main()
+        self.update_status("Terminal", COLORS["yellow"])
         
-        frame = tk.Frame(self.main_area, bg=BG_COLOR)
-        frame.pack(fill=tk.BOTH, expand=True, padx=30, pady=20)
+        frame = tk.Frame(self.main_area, bg=COLORS["bg"])
+        frame.pack(fill=tk.BOTH, expand=True, padx=40, pady=30)
         
-        tk.Label(frame, text="💻 Terminal", font=("Segoe UI", 18, "bold"),
-                bg=BG_COLOR, fg=TEXT_COLOR).pack(anchor="w", pady=(0, 20))
+        tk.Label(frame, text="⚡ Terminal", font=FONTS["title"],
+                bg=COLORS["bg"], fg=COLORS["text"]).pack(anchor="w", pady=(0, 25))
         
-        # Terminal output
-        self.terminal_output = scrolledtext.ScrolledText(frame, bg=BG_SECONDARY, fg=TEXT_COLOR,
-                                                        font=("Consolas", 10), relief=tk.FLAT,
-                                                        wrap=tk.WORD)
-        self.terminal_output.pack(fill=tk.BOTH, expand=True)
-        self.terminal_output.insert(tk.END, f"{self.current_dir}>\n")
+        # Terminal card
+        term_card = tk.Frame(frame, bg=COLORS["bg_card"])
+        term_card.pack(fill=tk.BOTH, expand=True)
         
-        # Input frame
-        input_frame = tk.Frame(frame, bg=BG_SECONDARY)
-        input_frame.pack(fill=tk.X, pady=(10, 0))
+        self.term_output = scrolledtext.ScrolledText(term_card, bg="#0a0a12",
+                                                    fg=COLORS["green"], font=FONTS["mono"],
+                                                    relief=tk.FLAT, wrap=tk.WORD,
+                                                    insertbackground=COLORS["green"])
+        self.term_output.pack(fill=tk.BOTH, expand=True, padx=10, pady=(10, 5))
+        self.term_output.insert(tk.END, f"{self.current_dir}>\n")
         
-        tk.Label(input_frame, text="$", font=("Consolas", 10),
-                bg=BG_SECONDARY, fg=GREEN).pack(side=tk.LEFT, padx=(10, 5))
+        # Input
+        input_frame = tk.Frame(term_card, bg="#0a0a12")
+        input_frame.pack(fill=tk.X, padx=10, pady=(0, 10))
         
-        self.terminal_input = tk.Entry(input_frame, bg=BG_SECONDARY, fg=TEXT_COLOR,
-                                      insertbackground=TEXT_COLOR, font=("Consolas", 10),
-                                      relief=tk.FLAT)
-        self.terminal_input.pack(side=tk.LEFT, fill=tk.X, expand=True, ipady=4)
-        self.terminal_input.bind("<Return>", self.execute_terminal_command)
+        tk.Label(input_frame, text="$ ", font=FONTS["mono"],
+                bg="#0a0a12", fg=COLORS["green"]).pack(side=tk.LEFT)
+        
+        self.term_input = tk.Entry(input_frame, bg="#0a0a12", fg=COLORS["green"],
+                                  insertbackground=COLORS["green"], font=FONTS["mono"],
+                                  relief=tk.FLAT, bd=0)
+        self.term_input.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self.term_input.bind("<Return>", self.exec_terminal)
+        self.term_input.focus_set()
+    
+    def show_git(self):
+        """Page Git."""
+        self.clear_main()
+        self.update_status("Git", COLORS["orange"])
+        
+        frame = tk.Frame(self.main_area, bg=COLORS["bg"])
+        frame.pack(fill=tk.BOTH, expand=True, padx=40, pady=30)
+        
+        tk.Label(frame, text="📋 Git", font=FONTS["title"],
+                bg=COLORS["bg"], fg=COLORS["text"]).pack(anchor="w", pady=(0, 25))
+        
+        # Actions
+        actions_card = tk.Frame(frame, bg=COLORS["bg_card"])
+        actions_card.pack(fill=tk.X, pady=(0, 20))
+        
+        tk.Label(actions_card, text="  Actions", font=FONTS["heading"],
+                bg=COLORS["bg_card"], fg=COLORS["text"]).pack(anchor="w", padx=15, pady=(15, 10))
+        
+        btn_frame = tk.Frame(actions_card, bg=COLORS["bg_card"])
+        btn_frame.pack(fill=tk.X, padx=15, pady=(0, 15))
+        
+        for text, cmd in [("📋 Statut", "git status"), ("📝 Diff", "git diff"),
+                         ("📜 Log", "git log --oneline -10"), ("➕ Add All", "git add .")]:
+            self.create_btn(btn_frame, text, lambda c=cmd: self.run_git(c), COLORS["bg_tertiary"])
+        
+        # Commit
+        commit_frame = tk.Frame(actions_card, bg=COLORS["bg_card"])
+        commit_frame.pack(fill=tk.X, padx=15, pady=(0, 15))
+        
+        self.commit_entry = tk.Entry(commit_frame, bg=COLORS["bg_tertiary"], fg=COLORS["text"],
+                                    insertbackground=COLORS["text"], font=FONTS["mono"],
+                                    relief=tk.FLAT, bd=0)
+        self.commit_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, ipady=8, padx=(0, 10))
+        self.commit_entry.insert(0, "Message de commit...")
+        
+        self.create_btn(commit_frame, "💾 Commit", self.git_commit, COLORS["green"])
+        
+        # Output
+        output_card = tk.Frame(frame, bg=COLORS["bg_card"])
+        output_card.pack(fill=tk.BOTH, expand=True)
+        
+        tk.Label(output_card, text="  Sortie", font=FONTS["heading"],
+                bg=COLORS["bg_card"], fg=COLORS["text"]).pack(anchor="w", padx=15, pady=(15, 10))
+        
+        self.git_output = scrolledtext.ScrolledText(output_card, bg=COLORS["bg_tertiary"],
+                                                   fg=COLORS["text"], font=FONTS["mono"],
+                                                   relief=tk.FLAT, wrap=tk.WORD)
+        self.git_output.pack(fill=tk.BOTH, expand=True, padx=15, pady=(0, 15))
     
     def show_settings(self):
-        """Affiche les paramètres."""
-        self.clear_main_area()
+        """Page paramètres."""
+        self.clear_main()
+        self.update_status("Paramètres", COLORS["text_dim"])
         
-        frame = tk.Frame(self.main_area, bg=BG_COLOR)
-        frame.pack(fill=tk.BOTH, expand=True, padx=30, pady=20)
+        frame = tk.Frame(self.main_area, bg=COLORS["bg"])
+        frame.pack(fill=tk.BOTH, expand=True, padx=40, pady=30)
         
-        tk.Label(frame, text="⚙ Paramètres", font=("Segoe UI", 18, "bold"),
-                bg=BG_COLOR, fg=TEXT_COLOR).pack(anchor="w", pady=(0, 20))
+        tk.Label(frame, text="⚙ Paramètres", font=FONTS["title"],
+                bg=COLORS["bg"], fg=COLORS["text"]).pack(anchor="w", pady=(0, 25))
         
-        settings_frame = tk.Frame(frame, bg=BG_SECONDARY)
-        settings_frame.pack(fill=tk.X)
+        # Settings card
+        card = tk.Frame(frame, bg=COLORS["bg_card"])
+        card.pack(fill=tk.X)
         
-        # Theme
-        tk.Label(settings_frame, text="Thème:", font=("Segoe UI", 10),
-                bg=BG_SECONDARY, fg=TEXT_COLOR, anchor="w").pack(fill=tk.X, padx=15, pady=(15, 5))
+        tk.Label(card, text="  Apparence", font=FONTS["heading"],
+                bg=COLORS["bg_card"], fg=COLORS["text"]).pack(anchor="w", padx=15, pady=(15, 10))
         
-        theme_frame = tk.Frame(settings_frame, bg=BG_SECONDARY)
-        theme_frame.pack(fill=tk.X, padx=15)
+        tk.Label(card, text="Thème: Sombre (actuel)", font=FONTS["body"],
+                bg=COLORS["bg_card"], fg=COLORS["text_secondary"]).pack(anchor="w", padx=15, pady=5)
         
-        for theme in ["Sombre", "Clair", "Bleu"]:
-            rb = tk.Radiobutton(theme_frame, text=theme, variable=tk.StringVar(),
-                               value=theme, bg=BG_SECONDARY, fg=TEXT_COLOR,
-                               selectcolor=BG_TERTIARY, font=("Segoe UI", 10))
-            rb.pack(side=tk.LEFT, padx=(0, 15))
+        tk.Label(card, text="Dossier de travail:", font=FONTS["body"],
+                bg=COLORS["bg_card"], fg=COLORS["text_secondary"]).pack(anchor="w", padx=15, pady=(15, 5))
+        
+        tk.Label(card, text=f"  {self.current_dir}", font=FONTS["mono_small"],
+                bg=COLORS["bg_tertiary"], fg=COLORS["text"], anchor="w").pack(fill=tk.X, padx=15, pady=(0, 15), ipady=8)
     
-    # ═══════════════════════════════════════════════════════════
+    # ═══════════════════════════════════════════════════════════════
     # ACTIONS
-    # ═══════════════════════════════════════════════════════════
+    # ═══════════════════════════════════════════════════════════════
+    
+    def create_btn(self, parent, text, command, bg=None, large=False):
+        """Crée un bouton stylisé."""
+        if bg is None:
+            bg = COLORS["accent"]
+        
+        fg = "white" if bg == COLORS["accent"] else COLORS["text"]
+        font_size = 11 if large else 10
+        
+        btn = tk.Button(parent, text=text, font=("Segoe UI", font_size),
+                       bg=bg, fg=fg, activebackground=COLORS["accent_dark"],
+                       activeforeground="white", relief=tk.FLAT, cursor="hand2",
+                       command=command, padx=15, pady=8 if large else 5)
+        btn.pack(side=tk.LEFT if not large else tk.TOP, padx=5, pady=5)
+        
+        btn.bind("<Enter>", lambda e: btn.configure(bg=COLORS["accent_light"]))
+        btn.bind("<Leave>", lambda e: btn.configure(bg=bg))
+        
+        return btn
     
     def action_read(self):
-        """Action: Lire un fichier."""
         path = filedialog.askopenfilename(
             title="Ouvrir un fichier",
             filetypes=[("Python", "*.py"), ("Text", "*.txt"), ("All", "*.*")]
@@ -577,166 +812,89 @@ class AgentCoderApp:
             self.open_file(path)
     
     def open_file(self, path):
-        """Ouvre et affiche un fichier."""
+        """Ouvre un fichier."""
         try:
             with open(path, 'r', encoding='utf-8') as f:
                 content = f.read()
             
-            self.clear_main_area()
-            
-            frame = tk.Frame(self.main_area, bg=BG_COLOR)
-            frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=15)
-            
-            # Header
-            header = tk.Frame(frame, bg=BG_SECONDARY)
-            header.pack(fill=tk.X)
-            
-            tk.Label(header, text=f"📖 {os.path.basename(path)}", 
-                    font=("Segoe UI", 12, "bold"), bg=BG_SECONDARY, fg=TEXT_COLOR).pack(side=tk.LEFT, padx=10, pady=8)
-            tk.Label(header, text=path, font=("Consolas", 9), 
-                    bg=BG_SECONDARY, fg=DIM).pack(side=tk.RIGHT, padx=10)
-            
-            # Content
-            text_widget = scrolledtext.ScrolledText(frame, bg=BG_SECONDARY, fg=TEXT_COLOR,
-                                                   font=("Consolas", 11), relief=tk.FLAT,
-                                                   wrap=tk.WORD)
-            text_widget.pack(fill=tk.BOTH, expand=True, pady=(10, 0))
-            text_widget.insert(tk.END, content)
-            text_widget.config(state=tk.DISABLED)
-            
-            # Stats
-            lines = content.split('\n')
-            words = len(content.split())
-            self.status_label.config(text=f" ✓ {len(lines)} lignes | {words} mots | {os.path.getsize(path)} bytes")
-            
+            self.show_editor()
+            self.editor.delete("1.0", tk.END)
+            self.editor.insert("1.0", content)
+            self.editor_file = path
+            self.file_label.config(text=os.path.basename(path))
+            self.update_status(f"Ouvert: {os.path.basename(path)}", COLORS["green"])
         except Exception as e:
-            messagebox.showerror("Erreur", f"Impossible d'ouvrir le fichier:\n{e}")
+            messagebox.showerror("Erreur", str(e))
     
     def action_write(self):
-        """Action: Écrire du code."""
         path = filedialog.asksaveasfilename(
-            title="Sauvegarder le fichier",
+            title="Sauvegarder",
             defaultextension=".py",
-            filetypes=[("Python", "*.py"), ("Text", "*.txt"), ("All", "*.*")]
-        )
-        if path:
-            self.open_file_for_edit(path)
-    
-    def open_file_for_edit(self, path):
-        """Ouvre un fichier pour édition."""
-        self.clear_main_area()
-        
-        frame = tk.Frame(self.main_area, bg=BG_COLOR)
-        frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=15)
-        
-        # Header
-        header = tk.Frame(frame, bg=BG_SECONDARY)
-        header.pack(fill=tk.X)
-        
-        tk.Label(header, text=f"✏️ {os.path.basename(path)}", 
-                font=("Segoe UI", 12, "bold"), bg=BG_SECONDARY, fg=TEXT_COLOR).pack(side=tk.LEFT, padx=10, pady=8)
-        
-        # Editor
-        self.editor = scrolledtext.ScrolledText(frame, bg=BG_SECONDARY, fg=TEXT_COLOR,
-                                               font=("Consolas", 11), relief=tk.FLAT,
-                                               wrap=tk.WORD, undo=True)
-        self.editor.pack(fill=tk.BOTH, expand=True, pady=(10, 0))
-        
-        # Try to load existing content
-        if os.path.exists(path):
-            try:
-                with open(path, 'r', encoding='utf-8') as f:
-                    self.editor.insert(tk.END, f.read())
-            except:
-                pass
-        
-        self.editor.current_file = path
-        
-        # Buttons
-        btn_frame = tk.Frame(frame, bg=BG_COLOR)
-        btn_frame.pack(fill=tk.X, pady=(10, 0))
-        
-        self.create_button(btn_frame, "💾 Sauvegarder", self.save_file)
-    
-    def save_file(self):
-        """Sauvegarde le fichier en cours d'édition."""
-        if hasattr(self.editor, 'current_file'):
-            try:
-                content = self.editor.get("1.0", tk.END)
-                with open(self.editor.current_file, 'w', encoding='utf-8') as f:
-                    f.write(content)
-                self.status_label.config(text=f" ✓ Sauvegardé: {self.editor.current_file}")
-                messagebox.showinfo("Succès", "Fichier sauvegardé!")
-            except Exception as e:
-                messagebox.showerror("Erreur", f"Erreur de sauvegarde:\n{e}")
-    
-    def action_search(self):
-        """Action: Rechercher."""
-        self.clear_main_area()
-        
-        frame = tk.Frame(self.main_area, bg=BG_COLOR)
-        frame.pack(fill=tk.BOTH, expand=True, padx=30, pady=20)
-        
-        tk.Label(frame, text="🔎 Rechercher dans les fichiers", font=("Segoe UI", 18, "bold"),
-                bg=BG_COLOR, fg=TEXT_COLOR).pack(anchor="w", pady=(0, 20))
-        
-        # Search input
-        search_frame = tk.Frame(frame, bg=BG_SECONDARY)
-        search_frame.pack(fill=tk.X)
-        
-        tk.Label(search_frame, text="Texte:", font=("Segoe UI", 10),
-                bg=BG_SECONDARY, fg=TEXT_COLOR, anchor="w").pack(fill=tk.X, padx=15, pady=(15, 5))
-        
-        self.search_text = tk.Entry(search_frame, bg=BG_TERTIARY, fg=TEXT_COLOR,
-                                   insertbackground=TEXT_COLOR, font=("Consolas", 10),
-                                   relief=tk.FLAT)
-        self.search_text.pack(fill=tk.X, padx=15, ipady=6)
-        
-        self.create_button(search_frame, "🔎 Rechercher", self.run_search)
-        
-        # Results
-        self.search_results = scrolledtext.ScrolledText(frame, bg=BG_SECONDARY, fg=TEXT_COLOR,
-                                                       font=("Consolas", 10), relief=tk.FLAT,
-                                                       wrap=tk.WORD)
-        self.search_results.pack(fill=tk.BOTH, expand=True, pady=(15, 0))
-    
-    def action_analyze(self):
-        """Action: Analyser un fichier."""
-        self.showAnalysis()
-    
-    def action_run(self):
-        """Action: Exécuter un script."""
-        path = filedialog.askopenfilename(
-            title="Sélectionner un script Python",
-            filetypes=[("Python", "*.py")]
-        )
-        if path:
-            self.run_script(path)
-    
-    def action_train(self):
-        """Action: Entraîner le modèle."""
-        self.showTraining()
-    
-    def action_download_model(self):
-        """Action: Télécharger un modèle."""
-        messagebox.showinfo("Téléchargement", "Utilisez Ollama pour télécharger des modèles:\n\nollama pull <model_name>")
-    
-    def browse_file(self):
-        """Parcourt les fichiers."""
-        path = filedialog.askopenfilename(
-            title="Sélectionner un fichier",
             filetypes=[("Python", "*.py"), ("All", "*.*")]
         )
+        if path:
+            self.show_editor()
+            self.editor_file = path
+            self.file_label.config(text=os.path.basename(path))
+    
+    def save_file(self):
+        if self.editor_file:
+            try:
+                with open(self.editor_file, 'w', encoding='utf-8') as f:
+                    f.write(self.editor.get("1.0", tk.END))
+                self.update_status(f"Sauvegardé: {os.path.basename(self.editor_file)}", COLORS["green"])
+            except Exception as e:
+                messagebox.showerror("Erreur", str(e))
+    
+    def action_search(self):
+        self.show_terminal()
+        pattern = tk.simpledialog.askstring("Rechercher", "Texte à rechercher:")
+        if pattern:
+            self.term_output.insert(tk.END, f"\nRecherche de '{pattern}'...\n")
+            for root_dir, dirs, files in os.walk(self.current_dir):
+                dirs[:] = [d for d in dirs if d not in ['.git', '__pycache__']]
+                for file in files:
+                    fp = os.path.join(root_dir, file)
+                    try:
+                        with open(fp, 'r', encoding='utf-8', errors='ignore') as f:
+                            for i, line in enumerate(f, 1):
+                                if pattern.lower() in line.lower():
+                                    self.term_output.insert(tk.END, f"  {fp}:{i} {line.rstrip()[:80]}\n")
+                    except:
+                        pass
+    
+    def action_analyze_code(self):
+        self.show_analysis()
+    
+    def action_run(self):
+        path = filedialog.askopenfilename(title="Script Python", filetypes=[("Python", "*.py")])
+        if path:
+            self.show_terminal()
+            self.term_output.insert(tk.END, f"\n$ python {path}\n")
+            thread = threading.Thread(target=self._run_thread, args=(path,), daemon=True)
+            thread.start()
+    
+    def _run_thread(self, path):
+        try:
+            proc = subprocess.Popen(f'python "{path}"', shell=True, stdout=subprocess.PIPE,
+                                   stderr=subprocess.STDOUT, cwd=self.current_dir, text=True)
+            for line in proc.stdout:
+                self.root.after(0, lambda l=line: self.term_output.insert(tk.END, l))
+                self.root.after(0, lambda: self.term_output.see(tk.END))
+            proc.wait()
+        except Exception as e:
+            self.root.after(0, lambda: self.term_output.insert(tk.END, f"Erreur: {e}\n"))
+    
+    def action_train(self):
+        self.show_training()
+    
+    def browse_file(self):
+        path = filedialog.askopenfilename(filetypes=[("Python", "*.py"), ("All", "*.*")])
         if path:
             self.analysis_path.delete(0, tk.END)
             self.analysis_path.insert(0, path)
     
-    # ═══════════════════════════════════════════════════════════
-    # EXÉCUTION
-    # ═══════════════════════════════════════════════════════════
-    
     def run_analysis(self):
-        """Exécute l'analyse d'un fichier."""
         path = self.analysis_path.get()
         if not path or not os.path.exists(path):
             messagebox.showerror("Erreur", "Fichier non trouvé")
@@ -755,113 +913,80 @@ class AgentCoderApp:
             
             ext = os.path.splitext(path)[1].lower()
             lang_map = {'.py': 'Python', '.js': 'JavaScript', '.ts': 'TypeScript',
-                       '.java': 'Java', '.cpp': 'C++', '.c': 'C', '.cs': 'C#'}
+                       '.java': 'Java', '.cpp': 'C++', '.cs': 'C#'}
             lang = lang_map.get(ext, 'Inconnu')
             
-            score = 100
-            if funcs == 0 and len(lines) > 50: score -= 10
-            if imports == 0 and len(lines) > 20: score -= 5
-            if content.count('#') == 0 and len(lines) > 30: score -= 10
-            
             result = f"""
-╔══════════════════════════════════════════════════════════╗
-║              RÉSULTATS DE L'ANALYSE                      ║
-╚══════════════════════════════════════════════════════════╝
+{'='*60}
+  RÉSULTATS DE L'ANALYSE
+{'='*60}
 
-📁 Fichier: {os.path.basename(path)}
-📁 Chemin:  {path}
-🌐 Langage: {lang}
+  Fichier:   {os.path.basename(path)}
+  Langage:   {lang}
+  Taille:    {os.path.getsize(path)} bytes
 
-┌──────────────────────────────────────────────────────────┐
-│ STATISTIQUES                                             │
-├──────────────────────────────────────────────────────────┤
-│  Lignes:      {len(lines):>8}                                   │
-│  Mots:        {words:>8}                                   │
-│  Fonctions:   {funcs:>8}                                   │
-│  Classes:     {classes:>8}                                   │
-│  Imports:     {imports:>8}                                   │
-│  Complexité:  {complexity:>8}                                   │
-└──────────────────────────────────────────────────────────┘
+{'─'*60}
+  STATISTIQUES
+{'─'*60}
+  Lignes:      {len(lines):>8}
+  Mots:        {words:>8}
+  Fonctions:   {funcs:>8}
+  Classes:     {classes:>8}
+  Imports:     {imports:>8}
+  Complexité:  {complexity:>8}
 
-┌──────────────────────────────────────────────────────────┐
-│ SCORE DE QUALITÉ: {score}/100                                  │
-└──────────────────────────────────────────────────────────┘
+{'─'*60}
+  SCORE: {min(100, max(0, 100 - (complexity * 2)))}/100
+{'='*60}
 """
             self.analysis_result.delete("1.0", tk.END)
-            self.analysis_result.insert(tk.END, result)
-            
+            self.analysis_result.insert("1.0", result)
         except Exception as e:
             messagebox.showerror("Erreur", str(e))
     
     def start_training(self):
-        """Lance l'entraînement."""
         topic = self.topic_entry.get()
         pages = self.pages_spin.get()
-        iterations = self.iter_spin.get()
-        code_only = self.code_only_var.get()
+        iters = self.iter_spin.get()
         
-        cmd = f'python orchestrator.py --topic "{topic}" --pages {pages} --iterations {iterations} --no-dashboard'
-        if code_only:
-            cmd += " --code-only"
-        
+        cmd = f'python orchestrator.py --topic "{topic}" --pages {pages} --iterations {iters} --no-dashboard'
         self.training_log.insert(tk.END, f"$ {cmd}\n\n")
-        self.status_label.config(text=" ⏳ Entraînement en cours...")
+        self.update_status("Entraînement en cours...", COLORS["yellow"])
         
-        thread = threading.Thread(target=self.run_training_thread, args=(cmd,))
-        thread.daemon = True
+        thread = threading.Thread(target=self._train_thread, args=(cmd,), daemon=True)
         thread.start()
     
-    def run_training_thread(self, cmd):
-        """Exécute l'entraînement dans un thread séparé."""
+    def _train_thread(self, cmd):
         try:
-            process = subprocess.Popen(
-                cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                cwd=self.current_dir, text=True
-            )
-            
-            for line in process.stdout:
-                self.root.after(0, self.append_training_log, line)
-            
-            process.wait()
-            
-            self.root.after(0, lambda: self.status_label.config(text=" ✓ Entraînement terminé"))
+            proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
+                                   stderr=subprocess.STDOUT, cwd=self.current_dir, text=True)
+            for line in proc.stdout:
+                self.root.after(0, lambda l=line: self.training_log.insert(tk.END, l))
+                self.root.after(0, lambda: self.training_log.see(tk.END))
+            proc.wait()
+            self.root.after(0, lambda: self.update_status("Entraînement terminé", COLORS["green"]))
         except Exception as e:
-            self.root.after(0, lambda: self.training_log.insert(tk.END, f"\nErreur: {e}\n"))
+            self.root.after(0, lambda: self.training_log.insert(tk.END, f"Erreur: {e}\n"))
     
-    def append_training_log(self, text):
-        """Ajoute du texte au journal d'entraînement."""
-        self.training_log.insert(tk.END, text)
-        self.training_log.see(tk.END)
-    
-    def run_script(self, path):
-        """Exécute un script Python."""
-        self.showTerminal()
-        self.terminal_output.insert(tk.END, f"\n$ python {path}\n")
-        
-        thread = threading.Thread(target=self.run_script_thread, args=(path,))
-        thread.daemon = True
-        thread.start()
-    
-    def run_script_thread(self, path):
-        """Exécute un script dans un thread."""
+    def exec_terminal(self, event):
+        cmd = self.term_input.get()
+        if not cmd:
+            return
+        self.term_input.delete(0, tk.END)
+        self.term_output.insert(tk.END, f"$ {cmd}\n")
         try:
-            process = subprocess.Popen(
-                f'python "{path}"', shell=True, stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT, cwd=self.current_dir, text=True
-            )
-            
-            for line in process.stdout:
-                self.root.after(0, lambda l=line: self.terminal_output.insert(tk.END, l))
-                self.root.after(0, lambda: self.terminal_output.see(tk.END))
-            
-            process.wait()
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True, cwd=self.current_dir)
+            if result.stdout:
+                self.term_output.insert(tk.END, result.stdout)
+            if result.stderr:
+                self.term_output.insert(tk.END, result.stderr)
         except Exception as e:
-            self.root.after(0, lambda: self.terminal_output.insert(tk.END, f"\nErreur: {e}\n"))
+            self.term_output.insert(tk.END, f"Erreur: {e}\n")
+        self.term_output.see(tk.END)
     
-    def run_git_command(self, cmd, path):
-        """Exécute une commande Git."""
+    def run_git(self, cmd):
         try:
-            result = subprocess.run(cmd, shell=True, capture_output=True, text=True, cwd=path)
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True, cwd=self.current_dir)
             self.git_output.insert(tk.END, f"$ {cmd}\n{result.stdout}\n")
             if result.stderr:
                 self.git_output.insert(tk.END, f"Erreur: {result.stderr}\n")
@@ -870,87 +995,36 @@ class AgentCoderApp:
             self.git_output.insert(tk.END, f"Erreur: {e}\n")
     
     def git_commit(self):
-        """Fait un commit Git."""
-        msg = self.commit_msg.get()
-        if not msg:
+        msg = self.commit_entry.get()
+        if not msg or "Message" in msg:
             messagebox.showerror("Erreur", "Entrez un message de commit")
             return
-        
-        self.run_git_command(f'git add .', self.current_dir)
-        self.run_git_command(f'git commit -m "{msg}"', self.current_dir)
-        self.commit_msg.delete(0, tk.END)
+        self.run_git("git add .")
+        self.run_git(f'git commit -m "{msg}"')
+        self.commit_entry.delete(0, tk.END)
     
-    def run_search(self):
-        """Exécute une recherche."""
-        pattern = self.search_text.get()
-        if not pattern:
-            return
-        
-        self.search_results.delete("1.0", tk.END)
-        self.search_results.insert(tk.END, f"Recherche de '{pattern}'...\n\n")
-        
-        found = 0
-        for root_dir, dirs, files in os.walk(self.current_dir):
-            dirs[:] = [d for d in dirs if d not in ['.git', '__pycache__', 'node_modules']]
-            for file in files:
-                filepath = os.path.join(root_dir, file)
-                try:
-                    with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
-                        for i, line in enumerate(f, 1):
-                            if pattern.lower() in line.lower():
-                                self.search_results.insert(tk.END, 
-                                    f"  {filepath}:{i} {line.rstrip()[:80]}\n")
-                                found += 1
-                                if found > 50:
-                                    self.search_results.insert(tk.END, "\nArrêt après 50 résultats\n")
-                                    return
-                except:
-                    pass
-        
-        self.search_results.insert(tk.END, f"\nTrouvé dans {found} ligne(s)")
+    def minimize(self):
+        self.root.iconify()
     
-    def execute_terminal_command(self, event):
-        """Exécute une commande du terminal."""
-        cmd = self.terminal_input.get()
-        if not cmd:
-            return
-        
-        self.terminal_input.delete(0, tk.END)
-        self.terminal_output.insert(tk.END, f"$ {cmd}\n")
-        
-        try:
-            result = subprocess.run(cmd, shell=True, capture_output=True, text=True, cwd=self.current_dir)
-            if result.stdout:
-                self.terminal_output.insert(tk.END, result.stdout)
-            if result.stderr:
-                self.terminal_output.insert(tk.END, result.stderr)
-        except Exception as e:
-            self.terminal_output.insert(tk.END, f"Erreur: {e}\n")
-        
-        self.terminal_output.see(tk.END)
+    def maximize(self):
+        if self.root.state() == 'zoomed':
+            self.root.state('normal')
+        else:
+            self.root.state('zoomed')
     
-    def open_folder(self):
-        """Ouvre un dossier."""
-        path = filedialog.askdirectory(title="Sélectionner un dossier")
-        if path:
-            self.current_dir = path
-            self.dir_label.config(text=f"📁 {path}")
-            self.status_label.config(text=f" ✓ Dossier: {path}")
-    
-    def create_button(self, parent, text, command, large=False):
-        """Crée un bouton stylisé."""
-        font_size = 11 if large else 10
-        btn = tk.Button(parent, text=text, font=("Segoe UI", font_size),
-                       bg=ACCENT_COLOR, fg=BG_COLOR, activebackground=BLUE,
-                       activeforeground=BG_COLOR, relief=tk.FLAT, cursor="hand2",
-                       command=command, padx=15 if large else 10, pady=8 if large else 4)
-        btn.pack(side=tk.LEFT if not large else tk.TOP, padx=5, pady=5)
-        return btn
+    def setup_bindings(self):
+        """Raccourcis clavier."""
+        self.root.bind("<Control-o>", lambda e: self.action_read())
+        self.root.bind("<Control-s>", lambda e: self.save_file())
+        self.root.bind("<Control-n>", lambda e: self.action_write())
+        self.root.bind("<F5>", lambda e: self.action_run())
+        self.root.bind("<F12>", lambda e: self.show_terminal())
 
 
 def main():
+    import tkinter.simpledialog
     root = tk.Tk()
-    app = AgentCoderApp(root)
+    app = GradenIA(root)
     root.mainloop()
 
 
