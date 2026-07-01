@@ -1,5 +1,4 @@
 @echo off
-title Graden IA - Assistant CLI pour le développement logiciel
+title agentCoder
 cd /d "C:\MES PROJETS WEB\Projet Python\Graden IA"
-python graden.py
-pause
+pythonw graden_app.py
