@@ -489,7 +489,7 @@ class GradenIA(ctk.CTk):
         quick_frame.pack(fill="x", padx=15, pady=(10, 5))
         
         for text in ["💡 Générer du code", "🔍 Analyser", "🐛 Debug", "📚 Expliquer"]:
-            btn = ctk.CTkButton(quick_frame, text=text, font=FONTS["small"),
+            btn = ctk.CTkButton(quick_frame, text=text, font=FONTS["small"],
                                fg_color=COLORS["bg_tertiary"], text_color=COLORS["text"],
                                hover_color=COLORS["border"], height=28,
                                command=lambda t=text: self.quick_chat(t))
