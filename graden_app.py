@@ -84,9 +84,9 @@ class Splash(ctk.CTkToplevel):
         
         # Animated circles
         for i, (cx, cy, r, color) in enumerate([
-            (0.3, 0.4, 80, "#6c5ce720"),
-            (0.7, 0.6, 60, "#a29bfe15"),
-            (0.5, 0.3, 100, "#6c5ce710"),
+            (0.3, 0.4, 80, C["bg3"]),
+            (0.7, 0.6, 60, C["bg4"]),
+            (0.5, 0.3, 100, C["bg2"]),
         ]):
             circle = ctk.CTkFrame(bg, fg_color=color, width=r, height=r, corner_radius=r//2)
             circle.place(relx=cx, rely=cy, anchor="center")
