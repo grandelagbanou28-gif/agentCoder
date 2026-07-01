@@ -200,6 +200,7 @@ class GradenIA(ctk.CTk):
         
         nav_items = [
             ("🏠", "Accueil", self.show_home),
+            ("💬", "Chat IA", self.show_chat),
             ("🤖", "Modèles IA", self.show_models),
             ("📊", "Analyse", self.show_analysis),
             ("🎯", "Entraînement", self.show_training),
@@ -428,6 +429,321 @@ class GradenIA(ctk.CTk):
         card.bind("<Button-1>", lambda e: command())
         
         return card
+    
+    def show_chat(self):
+        """Page Chat IA."""
+        self.clear_page()
+        self.set_page_title("Chat IA", "💬")
+        self.set_status("Chat IA", "purple")
+        
+        # Chat container
+        chat_frame = ctk.CTkFrame(self.page_frame, fg_color="transparent")
+        chat_frame.pack(fill="both", expand=True, padx=20, pady=15)
+        
+        # Chat header
+        header = ctk.CTkFrame(chat_frame, fg_color=COLORS["bg_card"], corner_radius=14, height=70)
+        header.pack(fill="x", pady=(0, 10))
+        header.pack_propagate(False)
+        
+        # AI Avatar
+        ai_avatar = ctk.CTkFrame(header, fg_color=COLORS["accent"], width=45, height=45, corner_radius=12)
+        ai_avatar.pack(side="left", padx=(15, 12), pady=12)
+        ai_avatar.pack_propagate(False)
+        ctk.CTkLabel(ai_avatar, text="G", font=("Segoe UI", 18, "bold"),
+                    text_color="white").pack(expand=True)
+        
+        ai_info = ctk.CTkFrame(header, fg_color="transparent")
+        ai_info.pack(side="left", fill="y")
+        ctk.CTkLabel(ai_info, text="Grden IA", font=FONTS["heading"],
+                    text_color=COLORS["text"], anchor="w").pack(anchor="w", pady=(8, 0))
+        ctk.CTkLabel(ai_info, text="En ligne • Prêt à vous aider",
+                    font=FONTS["small"], text_color=COLORS["green"], anchor="w").pack(anchor="w")
+        
+        # Clear chat button
+        ctk.CTkButton(header, text="🗑️ Effacer", font=FONTS["small"],
+                     fg_color=COLORS["bg_tertiary"], text_color=COLORS["text"],
+                     hover_color=COLORS["border"], width=90,
+                     command=self.clear_chat).pack(side="right", padx=15)
+        
+        # Messages area
+        self.chat_messages = ctk.CTkScrollableFrame(chat_frame, fg_color=COLORS["bg_card"],
+                                                    corner_radius=14, label_text="")
+        self.chat_messages.pack(fill="both", expand=True, pady=(0, 10))
+        
+        # Chat history
+        self.chat_history = []
+        
+        # Welcome message
+        self.add_chat_message(
+            "Grden IA",
+            "Bonjour ! 👋\n\nJe suis Grden IA, votre assistant intelligent pour le développement.\n\nJe peux vous aider à :\n• Générer du code\n• Analyser des fichiers\n• Debuguer des erreurs\n• Expliquer des concepts\n• Optimiser votre code\n\nComment puis-je vous aider aujourd'hui ?",
+            is_ai=True
+        )
+        
+        # Input area
+        input_frame = ctk.CTkFrame(chat_frame, fg_color=COLORS["bg_card"], corner_radius=14)
+        input_frame.pack(fill="x")
+        
+        # Quick actions
+        quick_frame = ctk.CTkFrame(input_frame, fg_color="transparent")
+        quick_frame.pack(fill="x", padx=15, pady=(10, 5))
+        
+        for text in ["💡 Générer du code", "🔍 Analyser", "🐛 Debug", "📚 Expliquer"]:
+            btn = ctk.CTkButton(quick_frame, text=text, font=FONTS["small"),
+                               fg_color=COLORS["bg_tertiary"], text_color=COLORS["text"],
+                               hover_color=COLORS["border"], height=28,
+                               command=lambda t=text: self.quick_chat(t))
+            btn.pack(side="left", padx=(0, 5))
+        
+        # Input field
+        input_row = ctk.CTkFrame(input_frame, fg_color="transparent")
+        input_row.pack(fill="x", padx=15, pady=(5, 15))
+        
+        self.chat_input = ctk.CTkTextbox(input_row, fg_color=COLORS["bg_tertiary"],
+                                         text_color=COLORS["text"], font=FONTS["body"],
+                                         corner_radius=10, height=50, wrap="word")
+        self.chat_input.pack(side="left", fill="x", expand=True, padx=(0, 10))
+        self.chat_input.bind("<Return>", self.send_chat_message)
+        
+        send_btn = ctk.CTkButton(input_row, text="📤 Envoyer", font=FONTS["heading"],
+                                 fg_color=COLORS["accent"], text_color="white",
+                                 hover_color=COLORS["accent_hover"], width=120, height=45,
+                                 command=lambda: self.send_chat_message(None))
+        send_btn.pack(side="right")
+    
+    def add_chat_message(self, sender, message, is_ai=False):
+        """Ajoute un message au chat."""
+        # Message container
+        msg_frame = ctk.CTkFrame(self.chat_messages, fg_color="transparent")
+        msg_frame.pack(fill="x", pady=5, padx=10)
+        
+        if is_ai:
+            # AI message
+            content_frame = ctk.CTkFrame(msg_frame, fg_color=COLORS["bg_tertiary"],
+                                        corner_radius=12)
+            content_frame.pack(anchor="w", padx=(0, 50))
+            
+            # Header
+            header = ctk.CTkFrame(content_frame, fg_color="transparent")
+            header.pack(fill="x", padx=12, pady=(10, 5))
+            
+            avatar = ctk.CTkFrame(header, fg_color=COLORS["accent"], width=24, height=24, corner_radius=6)
+            avatar.pack(side="left")
+            avatar.pack_propagate(False)
+            ctk.CTkLabel(avatar, text="G", font=("Segoe UI", 10, "bold"),
+                        text_color="white").pack(expand=True)
+            
+            ctk.CTkLabel(header, text=sender, font=FONTS["small"],
+                        text_color=COLORS["accent"], anchor="w").pack(side="left", padx=(8, 0))
+            
+            # Message
+            msg_label = ctk.CTkLabel(content_frame, text=message, font=FONTS["body"],
+                                    text_color=COLORS["text"], wraplength=500, justify="left",
+                                    anchor="w")
+            msg_label.pack(fill="x", padx=12, pady=(0, 10))
+        else:
+            # User message
+            content_frame = ctk.CTkFrame(msg_frame, fg_color=COLORS["accent"],
+                                        corner_radius=12)
+            content_frame.pack(anchor="e", padx=(50, 0))
+            
+            # Message
+            msg_label = ctk.CTkLabel(content_frame, text=message, font=FONTS["body"],
+                                    text_color="white", wraplength=500, justify="left",
+                                    anchor="w")
+            msg_label.pack(fill="x", padx=12, pady=10)
+        
+        # Store in history
+        self.chat_history.append({"sender": sender, "message": message, "is_ai": is_ai})
+        
+        # Scroll to bottom
+        self.chat_messages._parent_canvas.yview_moveto(1.0)
+    
+    def send_chat_message(self, event):
+        """Envoie un message."""
+        message = self.chat_input.get("1.0", "end-1c").strip()
+        if not message:
+            return
+        
+        # Add user message
+        self.add_chat_message("Vous", message, is_ai=False)
+        self.chat_input.delete("1.0", "end")
+        
+        # Generate AI response in thread
+        thread = threading.Thread(target=self.generate_ai_response, args=(message,), daemon=True)
+        thread.start()
+    
+    def generate_ai_response(self, user_message):
+        """Génère une réponse IA."""
+        # Simulate AI thinking
+        self.after(500, lambda: self.show_typing_indicator())
+        
+        # Generate response based on user input
+        response = self.get_ai_response(user_message)
+        
+        self.after(100, lambda: self.hide_typing_indicator())
+        self.after(200, lambda: self.add_chat_message("Grden IA", response, is_ai=True))
+    
+    def show_typing_indicator(self):
+        """Affiche l'indicateur de frappe."""
+        self.typing_frame = ctk.CTkFrame(self.chat_messages, fg_color="transparent")
+        self.typing_frame.pack(fill="x", pady=5, padx=10)
+        
+        content = ctk.CTkFrame(self.typing_frame, fg_color=COLORS["bg_tertiary"], corner_radius=12)
+        content.pack(anchor="w")
+        
+        self.typing_label = ctk.CTkLabel(content, text="● ● ●", font=FONTS["body"],
+                                        text_color=COLORS["text_dim"])
+        self.typing_label.pack(padx=15, pady=10)
+    
+    def hide_typing_indicator(self):
+        """Cache l'indicateur de frappe."""
+        if hasattr(self, 'typing_frame'):
+            self.typing_frame.destroy()
+    
+    def get_ai_response(self, message):
+        """Génère une réponse IA basée sur le message."""
+        msg_lower = message.lower()
+        
+        # Code generation
+        if any(word in msg_lower for word in ["code", "générer", "créer", "écrire", "fonction"]):
+            return """Voici un exemple de code que je peux générer :
+
+```python
+def fibonacci(n):
+    '''Génère la suite de Fibonacci'''
+    if n <= 0:
+        return []
+    elif n == 1:
+        return [0]
+    elif n == 2:
+        return [0, 1]
+    
+    fib = [0, 1]
+    for i in range(2, n):
+        fib.append(fib[i-1] + fib[i-2])
+    return fib
+
+# Utilisation
+print(fibonacci(10))
+```
+
+Voulez-vous que je génère un code spécifique ?"""
+        
+        # Analysis
+        elif any(word in msg_lower for word in ["analyser", "analyse", "vérifier", "review"]):
+            return """Je peux analyser votre code sous plusieurs angles :
+
+📊 **Statistiques**
+• Nombre de lignes
+• Complexité cyclomatique
+• Dette technique
+
+🔍 **Qualité**
+• Lisibilité
+• Maintenabilité
+• Respect des conventions
+
+⚡ **Performance**
+• Optimisations possibles
+• Gestion de la mémoire
+• Points d'amélioration
+
+🛡️ **Sécurité**
+• Vulnérabilités potentielles
+• Bonnes pratiques
+
+Envoyez-moi un fichier ou collez du code pour l'analyser !"""
+        
+        # Debug
+        elif any(word in msg_lower for word in ["debug", "erreur", "bug", "problème", "error"]):
+            return """Décrivez-moi votre problème et je vous aiderai à le résoudre !
+
+🔍 **Pour un debug efficace, fournissez :**
+• Le message d'erreur complet
+• Le code qui provoque l'erreur
+• Les étapes pour reproduire
+• Ce que vous avez déjà essayé
+
+💡 **Conseils rapides :**
+• Vérifiez l'orthographe des noms de variables
+• Assurez-vous que les imports sont corrects
+• Utilisez des print() pour tracer l'exécution
+• Vérifiez les types de données"""
+        
+        # Explanation
+        elif any(word in msg_lower for word in ["expliquer", "comment", "pourquoi", "quoi"]):
+            return """Je suis là pour expliquer !
+
+📚 **Je peux expliquer :**
+• Des concepts de programmation
+• Le fonctionnement d'algorithmes
+• La logique du code
+• Des design patterns
+• Les bonnes pratiques
+
+Posez votre question et je vous fournirai une explication claire avec des exemples !"""
+        
+        # Greeting
+        elif any(word in msg_lower for word in ["bonjour", "salut", "hello", "coucou", "hey"]):
+            return """Bonjour ! 😊
+
+Comment puis-je vous aider aujourd'hui ?
+
+• 💻 Générer du code
+• 🔍 Analyser un fichier
+• 🐛 Résoudre un bug
+• 📚 Expliquer un concept
+• ⚡ Optimiser du code
+
+Je suis à votre écoute !"""
+        
+        # Thanks
+        elif any(word in msg_lower for word in ["merci", "thanks", "thank"]):
+            return """De rien ! 😊
+
+N'hésitez pas si vous avez d'autres questions. Je suis toujours là pour vous aider !
+
+Bon coding ! 🚀"""
+        
+        # Default response
+        else:
+            return f"""Intéressant ! Pour mieux vous aider, pourriez-vous me donner plus de détails ?
+
+💡 **Je peux vous aider avec :**
+• Du code Python, JavaScript, C#, etc.
+• L'analyse et l'optimisation
+• Le debugging
+• L'explication de concepts
+• La génération de code
+
+Décrivez-moi votre besoin et je ferai de mon mieux !"""
+    
+    def quick_chat(self, action):
+        """Actions rapides du chat."""
+        messages = {
+            "💡 Générer du code": "Génère-moi une fonction pour trier une liste en Python",
+            "🔍 Analyser": "Analyse la qualité de mon code",
+            "🐛 Debug": "J'ai une erreur dans mon code, peux-tu m'aider ?",
+            "📚 Expliquer": "Explique-moi comment fonctionne une récursion",
+        }
+        
+        if action in messages:
+            self.chat_input.delete("1.0", "end")
+            self.chat_input.insert("1.0", messages[action])
+    
+    def clear_chat(self):
+        """Efface l'historique du chat."""
+        for widget in self.chat_messages.winfo_children():
+            widget.destroy()
+        self.chat_history = []
+        
+        # Re-add welcome message
+        self.add_chat_message(
+            "Grden IA",
+            "Chat effacé ! Comment puis-je vous aider ?",
+            is_ai=True
+        )
     
     def show_models(self):
         """Page modèles."""
