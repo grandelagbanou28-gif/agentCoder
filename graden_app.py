@@ -42,6 +42,7 @@ COLORS = {
     "cyan": "#39d2c0",
     "orange": "#d18616",
     "purple": "#a371f7",
+    "text_dim": "#6e7681",
 }
 
 FONTS = {
@@ -1001,7 +1002,7 @@ class GradenIA(ctk.CTk):
 
 
 def main():
-    app = GrdenIA()
+    app = GradenIA()
     app.mainloop()
 
 
